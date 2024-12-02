@@ -2,7 +2,7 @@ use image::{DynamicImage, RgbImage};
 use image::codecs::png::PngDecoder;
 use std::f64::consts::LOG2_E;
 
-// 1. Histogramme des LSB
+// Histogramme des LSB
 fn analyze_lsb_histogram(image: &RgbImage, lsb_mask: u8) {
     let mut lsb_counts = [0u32; 2];
     for (_x, _y, rgb) in image.enumerate_pixels() {
@@ -20,7 +20,7 @@ fn analyze_lsb_histogram(image: &RgbImage, lsb_mask: u8) {
     println!("1 : {} ({:.2}%)", lsb_counts[1], lsb_counts[1] as f64 / total as f64 * 100.0);
 }
 
-// 2. Test du Chi-carré
+// Test du Chi-carré
 fn perform_chi_squared_test(image: &RgbImage, lsb_mask: u8) {
     let mut lsb_counts = [0u32; 2];
 
@@ -51,7 +51,7 @@ fn perform_chi_squared_test(image: &RgbImage, lsb_mask: u8) {
     }
 }
 
-// 3. Entropie locale
+// Entropie locale
 fn safe_entropy(p: f64) -> f64 {
     if p > 0.0 {
         -p * p.ln() / LOG2_E
