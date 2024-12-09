@@ -62,6 +62,7 @@ fn safe_entropy(p: f64) -> f64 {
 
 fn compute_local_entropy(image: &RgbImage, lsb_mask: u8) {
     let window_size = 8;
+    let lsb_bits = lsb_mask.count_ones() as usize; // nombre de bits LSB à utiliser
 
     let width = image.width() as usize;
     let height = image.height() as usize;
@@ -79,7 +80,7 @@ fn compute_local_entropy(image: &RgbImage, lsb_mask: u8) {
                     if px < width && py < height {
                         let pixel = image.get_pixel(px as u32, py as u32);
                         for &color in &pixel.0 {
-                            for i in 0..8-lsb_mask.leading_zeros() {
+                            for i in 0..lsb_bits {
                                 let bit = (color >> i) & 1;
                                 lsb_counts[bit as usize] += 1;
                             }
@@ -87,24 +88,31 @@ fn compute_local_entropy(image: &RgbImage, lsb_mask: u8) {
                     }
                 }
             }
+
             let total = (lsb_counts[0] + lsb_counts[1]) as f64;
-            if total == 0.0 {
-                continue;
+            if total > 0.0 {
+                let p0 = lsb_counts[0] as f64 / total;
+                let p1 = lsb_counts[1] as f64 / total;
+
+                // Calcul direct de l'entropie en bits via log base 2
+                // Entropie = -∑ p(i) * log2(p(i))
+                let entropy =
+                    if p0 > 0.0 { -p0 * p0.log2() } else { 0.0 } +
+                    if p1 > 0.0 { -p1 * p1.log2() } else { 0.0 };
+
+                total_entropy += entropy;
+                window_count += 1;
             }
-            let p0 = lsb_counts[0] as f64 / total;
-            let p1 = lsb_counts[1] as f64 / total;
-
-            let entropy = safe_entropy(p0) + safe_entropy(p1);
-
-            total_entropy += entropy;
-            window_count += 1;
         }
     }
 
-    let average_entropy = total_entropy / window_count as f64;
-
-    println!("\nEntropie locale :");
-    println!("Entropie moyenne : {:.4} bits", average_entropy);
+    if window_count > 0 {
+        let average_entropy = total_entropy / window_count as f64;
+        println!("\nEntropie locale :");
+        println!("Entropie moyenne : {:.4} bits", average_entropy);
+    } else {
+        println!("\nAucune fenêtre valide n'a été trouvée pour le calcul de l'entropie.");
+    }
 }
 
 
