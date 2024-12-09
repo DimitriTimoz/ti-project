@@ -178,6 +178,19 @@ fn read_data_in_image_lsb(image: &RgbImage, data: &mut Vec<u8>, lsb: u8) {
 
 }
 
+fn create_lsb_only_image(image: &RgbImage, lsb_mask: u8, path: &str) {
+    let mut new_image = RgbImage::new(image.width(), image.height());
+    for (x, y, rgb) in image.enumerate_pixels() {
+        let mut new_rgb = [0u8; 3];
+        for (i, color) in rgb.0.iter().enumerate() {
+            new_rgb[i] = color & lsb_mask;
+            new_rgb[i] |= new_rgb[i] << lsb_mask.leading_zeros();
+        }
+        new_image.put_pixel(x, y, image::Rgb(new_rgb));
+    }
+    new_image.save(path).unwrap();
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut reader = std::io::BufReader::new(std::fs::File::open("rick.png").unwrap());
 
@@ -188,6 +201,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     analyze_lsb_histogram(&image_buffer, 0b111);
     perform_chi_squared_test(&image_buffer, 0b111);
     compute_local_entropy(&image_buffer, 0b111);
+    create_lsb_only_image(&image_buffer, 0b1, "lsb_only_1bit.png");
+    create_lsb_only_image(&image_buffer, 0b111, "lsb_only_3bits.png");
 
     let data = include_str!("the_hobbit.txt").as_bytes().to_vec();
     store_data_in_image_lsb(&mut image_buffer, &data);
@@ -208,7 +223,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     analyze_lsb_histogram(&image_buffer, 0b111);
     perform_chi_squared_test(&image_buffer, 0b111);
     compute_local_entropy(&image_buffer, 0b111);
-
+    create_lsb_only_image(&image_buffer, 0b111, "lsb_hobbit.png");
     
 
 
@@ -219,6 +234,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut image_buffer = img.to_rgb8();
     let data = include_bytes!("image.png");
     let bits_per_byte = store_data_in_image_lsb(&mut image_buffer, data);
+    create_lsb_only_image(&image_buffer, 0b1, "lsb_pirate.png");
     let new_image = DynamicImage::ImageRgb8(image_buffer);
     new_image.save("output2.png")?;
 
